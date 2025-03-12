@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 
 const app = express();
@@ -26,24 +25,37 @@ db.connect(err => {
     }
 });
 
+// Función para obtener la contraseña original (solo para prueba)
+const getOriginalPassword = async (hashedPassword, knownPasswords) => {
+    for (const pass of knownPasswords) {
+        if (await bcrypt.compare(pass, hashedPassword)) {
+            return pass;
+        }
+    }
+    return 'Desconocida';
+};
+
 // Endpoint de Login
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
+    
     db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
         if (err) return res.status(500).json({ message: 'Error en el servidor' });
 
-        if (results.length === 0) return res.status(401).json({ message: 'Usuario no encontrado' });
+        if (results.length === 0) return res.status(401).json({ message: 'Usuario o contraseña incorrecto' });
 
         const user = results[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
-        if (!validPassword) return res.status(401).json({ message: 'Contraseña incorrecta' });
+        if (!validPassword) return res.status(401).json({ message: 'Usuario o contraseña incorrecto' });
 
         if (user.status !== 'active') return res.status(403).json({ message: 'Usuario deshabilitado' });
 
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Obtener contraseña original (solo si tenemos una lista de contraseñas conocidas)
+        const knownPasswords = ['admin123*', 'user123', 'user'];
+        const originalPassword = await getOriginalPassword(user.password, knownPasswords);
 
-        res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+        res.json({ username: user.username, password: originalPassword });
     });
 });
 
