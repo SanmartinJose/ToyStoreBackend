@@ -28,7 +28,7 @@ app.post('/login', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos1' });
         }
 
         const user = results[0];
@@ -37,7 +37,7 @@ app.post('/login', (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos2' });
         }
 
         if (user.status !== 'active') {
