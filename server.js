@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise'); // Usamos mysql2 con promesas
 
 const app = express();
@@ -26,16 +25,14 @@ app.post('/login', async (req, res) => {
         const [results] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
 
         if (results.length === 0) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos 1' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
         }
 
         const user = results[0];
 
-        // Comparar la contraseña ingresada con la hasheada en la BD
-        const validPassword = await bcrypt.compare(password, user.password);
-
-        if (!validPassword) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos 2' });
+        // Comparar la contraseña ingresada con la almacenada en texto plano
+        if (password !== user.password) {
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
         }
 
         if (user.status !== 'active') {
