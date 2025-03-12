@@ -35,24 +35,28 @@ app.post('/login', (req, res) => {
             return res.status(500).json({ message: 'Error en el servidor' });
         }
 
+        // Si no se encuentra el usuario
         if (results.length === 0) {
-            return res.status(401).json({ message: 'Usuario o contraseñas incorrecto' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
         }
 
         const user = results[0];
 
-        // Comparar la contraseña ingresada con la hasheada en la BD
+        // Comparar la contraseña ingresada con la hash almacenada en la BD
         const validPassword = await bcrypt.compare(password, user.password);
 
+        // Si la contraseña es incorrecta
         if (!validPassword) {
-            return res.status(401).json({ message: 'Usuario o contraseña2 incorrecto' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
         }
 
+        // Verificar si el usuario está activo
         if (user.status !== 'active') {
             return res.status(403).json({ message: 'Usuario deshabilitado' });
         }
 
-        res.json({ username: user.username, message: 'Login exitoso' });
+        // Si todo está correcto, responder con los datos del usuario
+        res.json({ username: user.username, role: user.role, message: 'Login exitoso' });
     });
 });
 
