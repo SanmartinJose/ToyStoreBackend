@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise'); // Usamos mysql2 con promesas
 
 const app = express();
 app.use(express.json());
@@ -18,17 +18,15 @@ const db = mysql.createPool({
 });
 
 // Endpoint de Login
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
-    db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
-        if (err) {
-            console.error('Error en la consulta:', err);
-            return res.status(500).json({ message: 'Error en el servidor' });
-        }
+    try {
+        // Realizar la consulta a la base de datos
+        const [results] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
 
         if (results.length === 0) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos1' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos 1' });
         }
 
         const user = results[0];
@@ -37,15 +35,20 @@ app.post('/login', (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ message: 'Usuario o contraseña incorrectos2' });
+            return res.status(401).json({ message: 'Usuario o contraseña incorrectos 2' });
         }
 
         if (user.status !== 'active') {
             return res.status(403).json({ message: 'Usuario deshabilitado' });
         }
 
+        // Responder con los datos del usuario
         res.json({ username: user.username, message: 'Login exitoso' });
-    });
+
+    } catch (err) {
+        console.error('Error en la consulta:', err);
+        return res.status(500).json({ message: 'Error en el servidor' });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
